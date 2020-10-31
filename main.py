@@ -121,7 +121,7 @@ with tf.Session() as sess:
                 for idx, grad in enumerate(grads):
                     gradBuffer[idx] += grad
 
-                if i != 0:
+                if i % update_frequency == 0 and i != 0:
                     feed_dict = dictionary = dict(zip(myAgent.gradient_holders,
                                                       gradBuffer))
                     _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)

@@ -52,9 +52,9 @@ def generate_bpm_history():
 
 
 def calc_reward_func(target_beat_rate):
-    x1, y1 = target_beat_rate - 10, -1
-    x2, y2 = target_beat_rate, 0
-    x3, y3 = target_beat_rate + 10, -1
+    x1, y1 = target_beat_rate - 10, 0
+    x2, y2 = target_beat_rate, 1
+    x3, y3 = target_beat_rate + 10, 0
     
     a = (y3 - ((x3 * (y2 - y1) + x2 * y1 - x1 * y2) / (x2 - x1))) / (x3 * (x3 - x1 - x2) + x1 * x2)
     b = ((y2 - y1) / (x2 - x1)) - a * (x1 + x2)
@@ -271,8 +271,16 @@ def step(action):
     spawn_blood_cell((215, 271), (0, 0), "blue")
     spawn_blood_cell((582, 187), (0, 0), "red")
 
-    if action == 1 and not heart.is_use:
-        heart.use()
+    if not heart.is_use:
+        if action == 1:
+            if frames_timer % 30 == 0:
+                heart.use()
+        elif action == 2:
+            if frames_timer % 30 == 0 or frames_timer == 0:
+                heart.use()
+        elif action == 3:
+            if frames_timer % 20 == 0 or frames_timer == 0:
+                heart.use()
         
     heart.update()
     
@@ -297,9 +305,12 @@ def step(action):
 
 def render():
     global beat_rate
-    pg.event.get()
-    surface.fill(pg.Color("black"))
-    text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
-    surface.blit(text, (650, 710))
-    space.debug_draw(draw_options)
-    pg.display.update()
+    for _ in range(FPS):
+        pg.event.get()
+        surface.fill(pg.Color("black"))
+        text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
+        surface.blit(text, (650, 710))
+        space.debug_draw(draw_options)
+        pg.display.update()
+        clock.tick(_FPS)
+        
