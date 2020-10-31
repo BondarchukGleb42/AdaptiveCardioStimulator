@@ -5,7 +5,7 @@ import time
 
 
 env.reset()
-observation, reward, done, heart_is_use = env.step(0)
+observation, reward, done = env.step(0)
 while True:
     
     random_n = random.randint(0, 400)
@@ -18,10 +18,7 @@ while True:
     else:
         action = 0
     
-    if not heart_is_use:
-        observation, reward, done, heart_is_use = env.step(action)
-    else:
-        _, _, _, heart_is_use = env.step(0)
+    observation, reward, done = env.step(action) 
     env.render()
     
     if done:

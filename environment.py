@@ -179,11 +179,9 @@ class Heart():
         self.muscles = muscles
         self.t = 0
         self.is_use = False
-        self.counter = 0
         self.timing = generate_bpm_history()
     
     def use(self):
-        self.counter += 1
         self.is_use = True
         
         try:
@@ -287,7 +285,7 @@ def step(action):
     frames_timer += 1
     if frames_timer == 60:
         frames_timer = 0
-        heart.timing.append(heart.counter)
+        heart.timing.append(action)
         heart.timing = heart.timing[1:]
         heart.counter = 0
 
@@ -301,7 +299,7 @@ def step(action):
 
     space.step(_FPS)    
 
-    return [beat_rate, blood_v], reward, done, heart.is_use
+    return [beat_rate, blood_v], reward, done
 
 def render():
     global beat_rate
