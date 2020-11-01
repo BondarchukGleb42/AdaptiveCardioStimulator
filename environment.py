@@ -262,53 +262,64 @@ def reset():
 def step(action):
     global blood_v, beat_rate, frames_timer
     
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            raise SystemExit
+    for _ in range(60):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                raise SystemExit
 
-    spawn_blood_cell((215, 271), (0, 0), "blue")
-    spawn_blood_cell((582, 187), (0, 0), "red")
+        spawn_blood_cell((215, 271), (0, 0), "blue")
+        spawn_blood_cell((582, 187), (0, 0), "red")
 
-    if not heart.is_use:
-        if action == 1:
-            if frames_timer % 30 == 0:
-                heart.use()
-        elif action == 2:
-            if frames_timer % 30 == 0 or frames_timer == 0:
-                heart.use()
-        elif action == 3:
-            if frames_timer % 20 == 0 or frames_timer == 0:
-                heart.use()
+        if not heart.is_use:
+            if action == 1:
+                if frames_timer % 30 == 0 and frames_timer != 0:
+                    heart.use()
+            elif action == 2:
+                if frames_timer % 30 == 0 or frames_timer == 0:
+                    heart.use()
+            elif action == 3:
+                if frames_timer % 20 == 0 or frames_timer == 0:
+                    heart.use()
+            
+        heart.update()
         
-    heart.update()
-    
-    frames_timer += 1
-    if frames_timer == 60:
-        frames_timer = 0
-        heart.timing.append(action)
-        heart.timing = heart.timing[1:]
-        heart.counter = 0
+        frames_timer += 1
+        if frames_timer == 60:
+            frames_timer = 0
+            heart.timing.append(action)
+            heart.timing = heart.timing[1:]
+            heart.counter = 0
 
-    beat_rate = sum([analyze_br[i] * heart.timing[i] for i in range(0, 60)])
+        beat_rate = sum([analyze_br[i] * heart.timing[i] for i in range(0, 60)])
 
-    reward = get_reward(beat_rate)
-    if (blood_v < 1100) and (55 < beat_rate < 140):
-        done = False
-    else:
-        done = True
-
-    space.step(_FPS)    
-
-    return [beat_rate, blood_v], reward, done
-
-def render():
-    global beat_rate
-    for _ in range(FPS):
+        reward = get_reward(beat_rate)
+        if (blood_v < 1100) and (55 < beat_rate < 140):
+            done = False
+        else:
+            done = True
+            
+            
         pg.event.get()
         surface.fill(pg.Color("black"))
         text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
         surface.blit(text, (650, 710))
         space.debug_draw(draw_options)
         pg.display.update()
-        clock.tick(_FPS)
+        space.step(_FPS)
+            
+    return [beat_rate, blood_v], reward, done
+
+
+
+
+def render():
+    global beat_rate
+    while True:
+        pg.event.get()
+        surface.fill(pg.Color("black"))
+        text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
+        surface.blit(text, (650, 710))
+        space.debug_draw(draw_options)
+        pg.display.update()
+        space.step(_FPS)
         
