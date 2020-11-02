@@ -89,7 +89,7 @@ with tf.Session() as sess:
     for ix, grad in enumerate(gradBuffer):
         gradBuffer[ix] = grad * 0
 
-    for episode in range(len(total_episodes)):
+    for episode in range(total_episodes):
         env.reset()
         s, r, d = env.step(0)
         running_rewards = []
@@ -115,7 +115,7 @@ with tf.Session() as sess:
                 for idx, grad in enumerate(grads):
                     gradBuffer[idx] += grad
 
-                if episode % update_frequency == 0 and i != 0:
+                if i != 0:
                     feed_dict = dictionary = dict(zip(myAgent.gradient_holders,
                                                       gradBuffer))
                     _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)
