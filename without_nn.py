@@ -21,4 +21,4 @@ while True:
     observation, reward, done = env.step(action) 
     
     if done:
-        env = env.reset()
+        env.reset()

@@ -77,7 +77,7 @@ def generate_target_bpm():
     target_bpm = r
 
 
-class Kostyl():
+class Temp_cleaner():
     def __init__(self):
         s1 = pymunk.Segment(space.static_body, (186, 547), (277, 652), 0.3)
         s2 = pymunk.Segment(space.static_body, (277, 652), (372, 710), 0.3)
@@ -99,7 +99,7 @@ class Kostyl():
         space.remove(*self.all_shapes)
 
 
-kostyl = Kostyl()
+temp_cleaner = Temp_cleaner()
 
 
 class Blood_cell():
@@ -173,8 +173,8 @@ class Border():
         space.remove(self.segment_shape)  
 
 class Heart():
-    def __init__(self, borders, muscles, kostyls):
-        self.kostyls = kostyls
+    def __init__(self, borders, muscles, temp_cleaner):
+        self.temp_cleaner = temp_cleaner
         self.borders = borders
         self.muscles = muscles
         self.t = 0
@@ -197,10 +197,10 @@ class Heart():
                     border.destroy()
                 self.t = 0
                 self.is_use = False
-                self.kostyls.off()
+                self.temp_cleaner.off()
             elif self.t <= 20 and self.is_use:
                 if self.t == 1:
-                    self.kostyls.on()
+                    self.temp_cleaner.on()
                 if self.t <= 10:
                     for muscle in muscles:
                         muscle.up()
@@ -238,18 +238,18 @@ muscles = [m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12]
 
 cleaner1 = drower.create_cleaner((303, 376), (413, 382))
 cleaner2 = drower.create_cleaner((514, 354), (421, 404))
-
-heart = None
 frames_timer = 0
 
 def reset():
     global blood_v, heart, beat_rate, frames_timer
     
     space.remove(space.shapes)
-    drower.draw_heart()
     for m in muscles:
         m.draw()
-    heart = Heart(borders, muscles, kostyl)
+        
+    drower.draw_heart()
+    heart = Heart(borders, muscles, temp_cleaner)
+    
     cleaner1 = drower.create_cleaner((303, 376), (413, 382))
     cleaner2 = drower.create_cleaner((514, 354), (421, 404))
 
@@ -275,10 +275,10 @@ def step(action):
                 if frames_timer % 30 == 0 and frames_timer != 0:
                     heart.use()
             elif action == 2:
-                if frames_timer % 30 == 0 or frames_timer == 0:
+                if frames_timer % 30 == 0:
                     heart.use()
             elif action == 3:
-                if frames_timer % 20 == 0 or frames_timer == 0:
+                if frames_timer % 15 == 0:
                     heart.use()
             
         heart.update()
@@ -287,8 +287,7 @@ def step(action):
         if frames_timer == 60:
             frames_timer = 0
             heart.timing.append(action)
-            heart.timing = heart.timing[1:]
-            heart.counter = 0
+            heart.timing.pop(0)
 
         beat_rate = sum([analyze_br[i] * heart.timing[i] for i in range(0, 60)])
 
@@ -303,23 +302,9 @@ def step(action):
         surface.fill(pg.Color("black"))
         text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
         surface.blit(text, (650, 710))
+        
         space.debug_draw(draw_options)
         pg.display.update()
         space.step(_FPS)
             
     return [beat_rate, blood_v], reward, done
-
-
-
-
-def render():
-    global beat_rate
-    while True:
-        pg.event.get()
-        surface.fill(pg.Color("black"))
-        text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
-        surface.blit(text, (650, 710))
-        space.debug_draw(draw_options)
-        pg.display.update()
-        space.step(_FPS)
-        

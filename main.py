@@ -77,39 +77,33 @@ tf.reset_default_graph()  # Очищаем граф tensorflow
 myAgent = agent(lr=1e-2, s_size=2, a_size=1, h_size=16)  # Инициализируем агента
 saver = tf.train.Saver() # Инициализируем модуль для импорта/экспорта весов (встр. tensorflow)
 
-total_episodes = 1000
-max_ep = 1002
+total_episodes = 1001
 init = tf.global_variables_initializer()
 
 
 # Запуск графа tensorflow
 with tf.Session() as sess:
     sess.run(init)
-    i = 0
 
     gradBuffer = sess.run(tf.trainable_variables())
     for ix, grad in enumerate(gradBuffer):
         gradBuffer[ix] = grad * 0
 
-    while i < total_episodes:
+    for episode in range(len(total_episodes)):
         env.reset()
-        s, r, done, heart_is_use = env.step(0)
+        s, r, d = env.step(0)
         running_rewards = []
         ep_history = []
         for j in range(500):
-            if not heart_is_use:
-                # Выбрать действие на основе вероятностей, оцененных нейросетью
-                a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
-                a = np.random.choice(a_dist[0], p=a_dist[0])
-                a = np.argmax(a_dist == a)
-                s1, r, d, heart_is_use = env.step(a)  # Получить награду за совершенное действие
-                running_rewards.append(r)
-                loss = calc_loss(running_rewards)
-                ep_history.append([s, a, loss, s1])
-                s = s1
-            else:
-                _, _, _, heart_is_use = env.step(0)
-
+            # Выбрать действие на основе вероятностей, оцененных нейросетью
+            a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
+            a = np.random.choice(a_dist[0], p=a_dist[0])
+            a = np.argmax(a_dist == a)
+            s1, r, d = env.step(a)  # Получить награду за совершенное действие
+            running_rewards.append(r)
+            loss = calc_loss(running_rewards)
+            ep_history.append([s, a, loss, s1])
+            s = s1    
             if d:
                 # Обновить нейросеть
                 ep_history = np.array(ep_history)
@@ -121,7 +115,7 @@ with tf.Session() as sess:
                 for idx, grad in enumerate(grads):
                     gradBuffer[idx] += grad
 
-                if i % update_frequency == 0 and i != 0:
+                if episode % update_frequency == 0 and i != 0:
                     feed_dict = dictionary = dict(zip(myAgent.gradient_holders,
                                                       gradBuffer))
                     _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)
@@ -129,9 +123,5 @@ with tf.Session() as sess:
                         gradBuffer[ix] = grad * 0
                 break
 
-        if i % 100 == 0 and i!=0:
-            env.render()
-
-        if i % 500 == 0 and i!=0:
+        if episode % 500 == 0 and i!=0:
             save_path = saver.save(sess, WEIGHTS_PATH)
-        i += 1
