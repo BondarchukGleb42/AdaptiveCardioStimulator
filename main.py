@@ -115,7 +115,7 @@ with tf.Session() as sess:
                 for idx, grad in enumerate(grads):
                     gradBuffer[idx] += grad
 
-                if i != 0:
+                if episode != 0:
                     feed_dict = dictionary = dict(zip(myAgent.gradient_holders,
                                                       gradBuffer))
                     _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)
@@ -123,5 +123,5 @@ with tf.Session() as sess:
                         gradBuffer[ix] = grad * 0
                 break
 
-        if episode % 500 == 0 and i!=0:
+        if episode % 500 == 0 and episode != 0:
             save_path = saver.save(sess, WEIGHTS_PATH)
