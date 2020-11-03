@@ -316,8 +316,6 @@ def exploration_rate(n, min_rate=0.05):
         Чем дольше мы обучаемся, тем больше мы опираемся на политику и меньше на рандом."""
     if random.uniform(0, 1) >= max(min_rate,
                                    min(1, 1.0 - math.log10((n + 1) / 10))):  # Чем меньше число, тем больший рандом
-        print(max(min_rate, min(1, 1.0 - math.log10((n + 1) / 10))))
         return 'action'
     else:
-        print(max(min_rate, min(1, 1.0 - math.log10((n + 1) / 10))))
         return 'random'
