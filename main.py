@@ -30,6 +30,16 @@ def discount_rewards(r, gamma=0.99):
     return discounted_r
 
 
+def exploration_rate(n, min_rate=0.05):
+    """ Метод для вычисления коэффициента 'любопытства'.
+        Чем дольше мы обучаемся, тем больше мы опираемся на политику и меньше на рандом.
+        Возвращает True, если мы делаем случайное действие, иначе False"""
+    if random.uniform(0, 1) >= max(min_rate, min(1, 1.0 - math.log10((n + 1) / 150))):  # Чем меньше число, тем больший рандом
+        return True
+    else:
+        return False
+
+
 class agent():
     def __init__(self, lr, s_size, a_size, h_size):
         # Ниже инициализирована feed-forward часть нейросети.
@@ -67,7 +77,7 @@ class agent():
 
 tf.reset_default_graph()  # Очищаем граф tensorflow
 
-myAgent = agent(lr=1e-2, s_size=2, a_size=1, h_size=16)  # Инициализируем агента
+myAgent = agent(lr=1e-2, s_size=2, a_size=3, h_size=16)  # Инициализируем агента
 saver = tf.train.Saver()  # Инициализируем модуль для импорта/экспорта весов (встр. tensorflow)
 
 total_episodes = 1001
@@ -88,12 +98,12 @@ with tf.Session() as sess:
         ep_history = []
         for j in range(500):
             # Выбрать действие на основе вероятностей, оцененных нейросетью
-            if env.exploration_rate(episode) == 'action':
+            if exploration_rate(episode):
                 a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
                 a = np.random.choice(a_dist[0], p=a_dist[0])
                 a = np.argmax(a_dist == a)
                 print(episode, ')', 'action:', a)
-            elif env.exploration_rate(episode) == 'random':
+            else:
                 a = random.randint(0, 3)
                 print(episode, ')', 'random:', a)
             s1, r, d = env.step(a)  # Получить награду за совершенное действие
