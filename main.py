@@ -11,7 +11,7 @@ try:
 except:
     xrange = range
 
-WEIGHTS_PATH = "weights_learned_new/model.ckpt"
+WEIGHTS_PATH = "weights/model.ckpt"
 
 
 def calc_loss(rewards):
@@ -19,8 +19,6 @@ def calc_loss(rewards):
     for i in range(len(rewards)):
         loss += abs(1 - rewards[i]) * i * 0.001
     return loss
-
-WEIGHTS_PATH="weights_learned_solve.ckpt"
 
 
 def discount_rewards(r, gamma=0.99):
@@ -40,23 +38,19 @@ class agent():
         hidden = slim.fully_connected(self.state_in, h_size,
                                       biases_initializer=None, activation_fn=tf.nn.relu)
         hidden_2 = slim.fully_connected(hidden, h_size,
-                                       biases_initializer=None, activation_fn=tf.nn.relu)
+                                        biases_initializer=None, activation_fn=tf.nn.relu)
         self.output = slim.fully_connected(hidden_2, a_size,
                                            activation_fn=tf.nn.softmax, biases_initializer=None)
         self.chosen_action = tf.argmax(self.output, 1)  # выбор действия
 
-
         self.reward_holder = tf.placeholder(shape=[None], dtype=tf.float32)
         self.action_holder = tf.placeholder(shape=[None], dtype=tf.int32)
 
-        self.indexes = tf.range(0,
-                                tf.shape(self.output)[0]) * tf.shape(self.output)[1] + self.action_holder
+        self.indexes = tf.range(0, tf.shape(self.output)[0]) * tf.shape(self.output)[1] + self.action_holder
 
-        self.responsible_outputs = tf.gather(tf.reshape(self.output, [-1]),
-                                             self.indexes)
+        self.responsible_outputs = tf.gather(tf.reshape(self.output, [-1]), self.indexes)
         # функция потерь
-        self.loss = -tf.reduce_mean(tf.log(self.responsible_outputs) *
-                                    self.reward_holder)
+        self.loss = -tf.reduce_mean(tf.log(self.responsible_outputs) * self.reward_holder)
 
         tvars = tf.trainable_variables()
         self.exported = tf.trainable_variables()
@@ -68,18 +62,16 @@ class agent():
         self.gradients = tf.gradients(self.loss, tvars)
 
         optimizer = tf.train.AdamOptimizer(learning_rate=lr)
-        self.update_batch = optimizer.apply_gradients(zip(self.gradient_holders,
-                                                          tvars))
+        self.update_batch = optimizer.apply_gradients(zip(self.gradient_holders, tvars))
 
 
 tf.reset_default_graph()  # Очищаем граф tensorflow
 
 myAgent = agent(lr=1e-2, s_size=2, a_size=1, h_size=16)  # Инициализируем агента
-saver = tf.train.Saver() # Инициализируем модуль для импорта/экспорта весов (встр. tensorflow)
+saver = tf.train.Saver()  # Инициализируем модуль для импорта/экспорта весов (встр. tensorflow)
 
 total_episodes = 1001
 init = tf.global_variables_initializer()
-
 
 # Запуск графа tensorflow
 with tf.Session() as sess:
@@ -96,14 +88,19 @@ with tf.Session() as sess:
         ep_history = []
         for j in range(500):
             # Выбрать действие на основе вероятностей, оцененных нейросетью
-            a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
-            a = np.random.choice(a_dist[0], p=a_dist[0])
-            a = np.argmax(a_dist == a)
+            if env.exploration_rate(episode) == 'action':
+                a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
+                a = np.random.choice(a_dist[0], p=a_dist[0])
+                a = np.argmax(a_dist == a)
+                print(episode, ')', 'action:', a)
+            elif env.exploration_rate(episode) == 'random':
+                a = random.randint(0, 3)
+                print(episode, ')', 'random:', a)
             s1, r, d = env.step(a)  # Получить награду за совершенное действие
             running_rewards.append(r)
             loss = calc_loss(running_rewards)
             ep_history.append([s, a, loss, s1])
-            s = s1    
+            s = s1
             if d:
                 # Обновить нейросеть
                 ep_history = np.array(ep_history)
@@ -123,5 +120,5 @@ with tf.Session() as sess:
                         gradBuffer[ix] = grad * 0
                 break
 
-        if episode % 500 == 0 and episode != 0:
+        if episode % 10 == 0 and episode != 0:
             save_path = saver.save(sess, WEIGHTS_PATH)
