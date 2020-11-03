@@ -2,23 +2,30 @@ import environment as env
 import random
 import numpy as np
 import time
-
+import pandas as pd
 
 env.reset()
-observation, reward, done = env.step(0)
+obs, reward, done = env.step(0)
+action = 0
+df = pd.read_csv("heart_info.csv", sep=";")
 while True:
     random_n = random.randint(0, 400)
-    if random_n > 200:
-        action = 1
-        if random_n > 300:
-            action = 2
+    if random_n > 180:
+        action1 = 1
+        if random_n > 280:
+            action1 = 2
             if random_n > 380:
-                action = 3
+                action1 = 3
     else:
-        action = 0
-    print(action)
+        action1 = 0
     
-    observation, reward, done = env.step(action) 
+    obs1, reward, done = env.step(action1)
+    new_row = pd.Series({"Action": action1, "bpm": obs1[0], "blood_volume": obs1[1],
+                         "last_action": action, "last_bpm": obs[0], "last_blood_volume": obs[1]})
+    df = df.append(new_row, ignore_index=True)
+    df.to_csv("heart_info.csv", sep=";")
+    
+    obs, action = obs1, action1
     
     if done:
         env.reset()

@@ -299,13 +299,18 @@ def step(action):
         else:
             done = True
 
-        # pg.event.get()
-        # surface.fill(pg.Color("black"))
-        # text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
-        # surface.blit(text, (650, 710))
-        #
-        # space.debug_draw(draw_options)
-        # pg.display.update()
+        pg.event.get()
+        surface.fill(pg.Color("black"))
+        text = font.render(str(int(beat_rate)), 5, (255, 180, 180))
+        surface.blit(text, (650, 710))
+        
+        space.debug_draw(draw_options)
+        pg.display.update()
         space.step(_FPS)
 
     return [beat_rate, blood_v], reward, done
+
+
+def step_without_render(action):
+    global blood_v, beat_rate
+    pass

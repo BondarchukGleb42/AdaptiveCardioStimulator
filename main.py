@@ -5,6 +5,7 @@ import time
 import tensorflow as tf
 import tf_slim as slim
 from tensorflow.python.saved_model import tag_constants
+from collections import Counter
 
 try:
     xrange = xrange
@@ -91,22 +92,25 @@ with tf.Session() as sess:
     for ix, grad in enumerate(gradBuffer):
         gradBuffer[ix] = grad * 0
 
-    for episode in range(total_episodes):
+    for episode in range(1, total_episodes+1):
         env.reset()
         s, r, d = env.step(0)
         running_rewards = []
         ep_history = []
+        actions_list = []
+        random_actions = 0
+        print(f"Эпоха №{episode}")
+        
         for j in range(500):
-            # Выбрать действие на основе вероятностей, оцененных нейросетью
-            if exploration_rate(episode):
+            if not exploration_rate(episode):
                 a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
                 a = np.random.choice(a_dist[0], p=a_dist[0])
                 a = np.argmax(a_dist == a)
-                print(episode, ')', 'action:', a)
-            else:
+            else: # выполнить случайное действие с определённое вероятностью
                 a = random.randint(0, 3)
-                print(episode, ')', 'random:', a)
-            s1, r, d = env.step(a)  # Получить награду за совершенное действие
+                random_actions += 1
+            actions_list.append(a)
+            s1, r, d = env.step_without_render(a)  # Получить награду за совершенное действие
             running_rewards.append(r)
             loss = calc_loss(running_rewards)
             ep_history.append([s, a, loss, s1])
@@ -128,7 +132,23 @@ with tf.Session() as sess:
                     _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)
                     for ix, grad in enumerate(gradBuffer):
                         gradBuffer[ix] = grad * 0
+                print(f"Модель продержалась {j+1}/500 секунд")
+                print(f"Совершено {random_actions} случайных действий")
+                print(f"Список совершённых действий: {Counter(actions_list)}")
+                print(f"Ошибка: {loss}")
+                print("-------------------------------------")
                 break
 
         if episode % 10 == 0 and episode != 0:
             save_path = saver.save(sess, WEIGHTS_PATH)
+            
+        if episode % 100 == 0:
+            env.reset()
+            s, r, d = env.step(0)
+            for j in range(500):
+                a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
+                a = np.random.choice(a_dist[0], p=a_dist[0])
+                a = np.argmax(a_dist == a)
+                s, r, d = env.step(a)
+                if d:
+                    break
