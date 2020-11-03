@@ -96,7 +96,6 @@ with tf.Session() as sess:
         ep_history = []
         for j in range(500):
             # Выбрать действие на основе вероятностей, оцененных нейросетью
-            print(episode)
             if env.exploration_rate(episode) == 'action':
                 a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
                 a = np.random.choice(a_dist[0], p=a_dist[0])
