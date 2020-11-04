@@ -332,4 +332,4 @@ def step_without_render(action):
     else:
         done = True
     
-    return [beat_rate, blood_v], reward, done
+    return [beat_rate, *blood_v], reward, done
