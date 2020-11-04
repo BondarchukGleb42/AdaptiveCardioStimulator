@@ -4,6 +4,10 @@ import random
 import drower
 from pymunk import Vec2d
 import math
+import numpy as np
+import blood_volume_generator
+import warnings
+warnings.filterwarnings("ignore")
 
 pymunk.pygame_util.positive_y_is_up = False
 pg.font.init()
@@ -243,7 +247,7 @@ frames_timer = 0
 
 
 def reset():
-    global blood_v, heart, beat_rate, frames_timer
+    global blood_v, heart, beat_rate, frames_timer, last_action
 
     space.remove(space.shapes)
     for m in muscles:
@@ -257,6 +261,7 @@ def reset():
 
     blood_v = 0
     frames_timer = 0
+    last_action = 0
     beat_rate = sum([analyze_br[i] * heart.timing[i] for i in range(60)])
     target_bpm = generate_target_bpm()
 
@@ -312,5 +317,19 @@ def step(action):
 
 
 def step_without_render(action):
-    global blood_v, beat_rate
-    pass
+    global beat_rate, blood_v, last_action
+    
+    blood_v = blood_volume_generator.predictor.predict(np.array([last_action, blood_v]).reshape(-1, 2))
+    last_action = action
+    
+    heart.timing.append(action)
+    heart.timing.pop(0)
+    beat_rate = sum([analyze_br[i] * heart.timing[i] for i in range(0, 60)])
+    
+    reward = get_reward(beat_rate)
+    if (blood_v < 1100) and (55 < beat_rate < 140):
+        done = False
+    else:
+        done = True
+    
+    return [beat_rate, blood_v], reward, done
