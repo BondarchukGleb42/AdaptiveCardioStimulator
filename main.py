@@ -1,6 +1,7 @@
 import environment as env
 import random
 import numpy as np
+import math
 import time
 import tensorflow as tf
 import tf_slim as slim
@@ -18,7 +19,7 @@ WEIGHTS_PATH = "weights/model.ckpt"
 def calc_loss(rewards):
     loss = 0
     for i in range(len(rewards)):
-        loss += rewards[i] * i * 0.001
+        loss += abs(rewards[i]) * i * 0.0005
     return loss
 
 
@@ -36,9 +37,9 @@ def exploration_rate(n, min_rate=0.05):
         Чем дольше мы обучаемся, тем больше мы опираемся на политику и меньше на рандом.
         Возвращает True, если мы делаем случайное действие, иначе False"""
     if random.uniform(0, 1) >= max(min_rate, min(1, 1.0 - math.log10((n + 1) / 150))):  # Чем меньше число, тем больший рандом
-        return True
-    else:
         return False
+    else:
+        return True
 
 
 class agent():
@@ -134,15 +135,15 @@ with tf.Session() as sess:
                         for ix, grad in enumerate(gradBuffer):
                             gradBuffer[ix] = grad * 0
                     break
-            except:
-                continue
+        except ValueError:
+            continue
             
-            print(f"Эпоха №{episode}")
-            print(f"Модель продержалась {j+1}/500 секунд")
-            print(f"Совершено {random_actions} случайных действий")
-            print(f"Список совершённых действий: {Counter(actions_list)}")
-            print(f"Ошибка: {loss}")
-            print("-------------------------------------")
+        print(f"Эпоха №{episode}")
+        print(f"Модель продержалась {j+1}/500 секунд")
+        print(f"Совершено {random_actions} случайных действий")
+        print(f"Список совершённых действий: {Counter(actions_list)}")
+        print(f"Ошибка: {loss}")
+        print("-------------------------------------")
 
         if episode % 10 == 0 and episode != 0:
             save_path = saver.save(sess, WEIGHTS_PATH)
