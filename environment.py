@@ -5,7 +5,6 @@ import drower
 from pymunk import Vec2d
 import math
 import numpy as np
-import blood_volume_generator
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -16,9 +15,6 @@ font = pg.font.Font(None, 100)
 RES = WIDTH, HEIGHT = 800, 800
 FPS = 60
 _FPS = 1 / FPS
-
-LOW_SHELF = 55
-HIGH_SHELF = 140
 
 pg.init()
 surface = pg.display.set_mode(RES)
@@ -39,7 +35,8 @@ drower.space = space
 drower.draw_heart()
 blood_v = 0
 
-target_bpm = 0
+LOW_SHELF = 55
+HIGH_SHELF = 140
 
 
 def analyze_br_func(x):
@@ -51,14 +48,13 @@ analyze_br = [analyze_br_func(i) for i in range(1, 61)]
 
 def generate_bpm_history():
     r = random.randint(LOW_SHELF + 6, HIGH_SHELF - 10)
-    print(f'Current BPM: %dbpm' % r)
     return [r / 60 for i in range(60)]
 
 
 def calc_reward_func(target_beat_rate):
-    x1, y1 = target_beat_rate - 10, 0
-    x2, y2 = target_beat_rate, 1
-    x3, y3 = target_beat_rate + 10, 0
+    x1, y1 = target_beat_rate - 10, -1
+    x2, y2 = target_beat_rate, 0
+    x3, y3 = target_beat_rate + 10, -1
 
     a = (y3 - ((x3 * (y2 - y1) + x2 * y1 - x1 * y2) / (x2 - x1))) / (x3 * (x3 - x1 - x2) + x1 * x2)
     b = ((y2 - y1) / (x2 - x1)) - a * (x1 + x2)
@@ -77,7 +73,6 @@ def get_reward(x):
 def generate_target_bpm():
     global target_bpm
     r = random.randint(LOW_SHELF + 5, HIGH_SHELF - 25)
-    print(f'Next objective: %dbpm' % r)
     target_bpm = r
 
 
@@ -319,8 +314,13 @@ def step(action):
 def step_without_render(action):
     global beat_rate, blood_v, last_action
     
-    blood_v = blood_volume_generator.predictor.predict(np.array([last_action, blood_v]).reshape(-1, 2))
-    last_action = action
+    if action == 0:
+        blood_v += random.randint(180, 300)
+    else:
+        if blood_v < 450:
+            blood_v += random.randint(30, 70) * action
+        else:
+            blood_v -= blood_v * 0.2 * action
     
     heart.timing.append(action)
     heart.timing.pop(0)
@@ -332,4 +332,4 @@ def step_without_render(action):
     else:
         done = True
     
-    return [beat_rate, *blood_v], reward, done
+    return [beat_rate, blood_v], reward, done

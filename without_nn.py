@@ -16,7 +16,6 @@ while True:
                 action = 3
     else:
         action = 0
-    
     obs, reward, done = env.step_without_render(action)
     
     print(f"Объём крови: {obs[1]}")

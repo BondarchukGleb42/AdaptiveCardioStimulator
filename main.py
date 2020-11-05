@@ -18,7 +18,7 @@ WEIGHTS_PATH = "weights/model.ckpt"
 def calc_loss(rewards):
     loss = 0
     for i in range(len(rewards)):
-        loss += abs(1 - rewards[i]) * i * 0.001
+        loss += rewards[i] * i * 0.001
     return loss
 
 
@@ -99,45 +99,50 @@ with tf.Session() as sess:
         ep_history = []
         actions_list = []
         random_actions = 0
-        print(f"Эпоха №{episode}")
         
-        for j in range(500):
-            if not exploration_rate(episode):
-                a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
-                a = np.random.choice(a_dist[0], p=a_dist[0])
-                a = np.argmax(a_dist == a)
-            else: # выполнить случайное действие с определённое вероятностью
-                a = random.randint(0, 3)
-                random_actions += 1
-            actions_list.append(a)
-            s1, r, d = env.step_without_render(a)  # Получить награду за совершенное действие
-            running_rewards.append(r)
-            loss = calc_loss(running_rewards)
-            ep_history.append([s, a, loss, s1])
-            s = s1
-            if d:
-                # Обновить нейросеть
-                ep_history = np.array(ep_history)
-                ep_history[:, 2] = discount_rewards(ep_history[:, 2])
-                feed_dict = {myAgent.reward_holder: ep_history[:, 2],
-                             myAgent.action_holder: ep_history[:, 1],
-                             myAgent.state_in: np.vstack(ep_history[:, 0])}
-                grads = sess.run(myAgent.gradients, feed_dict=feed_dict)
-                for idx, grad in enumerate(grads):
-                    gradBuffer[idx] += grad
+        try: #  да, это неадекватный костыль, который мы потом обязательно уберём.
+            for j in range(500):
+                if exploration_rate(episode): #  выполнить случайное действие с определённое вероятностью
+                    a = random.randint(0, 3)
+                    random_actions += 1
+                else:
+                    a_dist = sess.run(myAgent.output, feed_dict={myAgent.state_in: [s]})
+                    a = np.random.choice(a_dist[0], p=a_dist[0])
+                    a = np.argmax(a_dist == a)
+                
+                actions_list.append(a)
+                s1, r, d = env.step_without_render(a)  # Получить награду за совершенное действие
+                running_rewards.append(r)
+                loss = calc_loss(running_rewards)
+                ep_history.append([s, a, loss, s1])
+                s = s1
+                if d:
+                    # Обновить нейросеть
+                    ep_history = np.array(ep_history)
+                    ep_history[:, 2] = discount_rewards(ep_history[:, 2])
+                    feed_dict = {myAgent.reward_holder: ep_history[:, 2],
+                                 myAgent.action_holder: ep_history[:, 1],
+                                 myAgent.state_in: np.vstack(ep_history[:, 0])}
+                    grads = sess.run(myAgent.gradients, feed_dict=feed_dict)
+                    for idx, grad in enumerate(grads):
+                        gradBuffer[idx] += grad
 
-                if episode != 0:
-                    feed_dict = dictionary = dict(zip(myAgent.gradient_holders,
-                                                      gradBuffer))
-                    _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)
-                    for ix, grad in enumerate(gradBuffer):
-                        gradBuffer[ix] = grad * 0
-                print(f"Модель продержалась {j+1}/500 секунд")
-                print(f"Совершено {random_actions} случайных действий")
-                print(f"Список совершённых действий: {Counter(actions_list)}")
-                print(f"Ошибка: {loss}")
-                print("-------------------------------------")
-                break
+                    if episode != 0:
+                        feed_dict = dictionary = dict(zip(myAgent.gradient_holders,
+                                                          gradBuffer))
+                        _ = sess.run(myAgent.update_batch, feed_dict=feed_dict)
+                        for ix, grad in enumerate(gradBuffer):
+                            gradBuffer[ix] = grad * 0
+                    break
+            except:
+                continue
+            
+            print(f"Эпоха №{episode}")
+            print(f"Модель продержалась {j+1}/500 секунд")
+            print(f"Совершено {random_actions} случайных действий")
+            print(f"Список совершённых действий: {Counter(actions_list)}")
+            print(f"Ошибка: {loss}")
+            print("-------------------------------------")
 
         if episode % 10 == 0 and episode != 0:
             save_path = saver.save(sess, WEIGHTS_PATH)
