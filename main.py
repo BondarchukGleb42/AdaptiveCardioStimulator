@@ -162,3 +162,5 @@ with tf.Session() as sess:
                 s, r, d = env.step(a)
                 if d:
                     break
+
+                    
