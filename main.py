@@ -33,6 +33,7 @@ def discount_rewards(r, gamma=0.99):
 
 
 class agent():
+    
     def __init__(self, lr, s_size, a_size, h_size):
         # Ниже инициализирована feed-forward часть нейросети.
         # Агент оценивает состояние среды и совершает действие
